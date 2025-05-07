@@ -10,7 +10,6 @@ library(afex) # for significance testing in mixed effects models
 # we need to load it first 
 # you have to locate it on your drive (Windows - right click, show path)
 data <- read_csv("~/Documents/Research/stats-workshop/Day 1/data_4.csv")
-
 ## the data file has the following variables:
 # meaning - what the participants communicated about
 # participant - participant id
@@ -49,10 +48,21 @@ summary(mdl1)
 # we can plot it somewhat better using ggplot
 
 ggplot(data_amp, aes(x = as_factor(round), y = totalAmplitude, fill = as_factor(round))) +
-  geom_boxplot()
+  geom_boxplot() +
+  theme_minimal()
 
 # your turn! repeat the steps for total bbmv
+mean(data$totalBbmv)
+median(data$totalBbmv)
 
+
+plot(data$totalBbmv ~ data$round)
+data_bbmv <- filter(data, data$totalBbmv < 500)
+
+mdl2 <- lm(totalBbmv ~ round, data=data_bbmv)
+summary(mdl2)
+
+ggplot(data_bbmv, aes(x=as_factor(round), y=totalBbmv)) + geom_boxplot()
 
 ## as we have seen in the ggplot for amplitude, turn can be 
 ## seen as a linear predictor or a categorical predictor
@@ -83,6 +93,7 @@ summary(mdl2)
 ## this can be achieved by backward difference coding
 # luckily, there's a library for that :)
 library(MASS)
+install.packages("MASS")
 mdl3 <- lm(totalAmplitude ~ round, data = data_amp, contrasts = list(round = MASS::contr.sdif))
 summary(mdl3)
 ## the intercept stays more or less the same
@@ -139,9 +150,16 @@ range(data_cars$disp)
 data_cars$cyl_z <- (data_cars$cyl - mean(data_cars$cyl)) / sd(data_cars$cyl)
 data_cars$disp_z <- (data_cars$disp - mean(data_cars$disp)) / sd(data_cars$disp)
 
+data_cars
+
 car_mpg_new <- lm(mpg ~ cyl_z * disp_z, data = data_cars)
 summary(car_mpg_new)
 
 ## and now we have a different story! 
-# try the same with drat and wt
+# try the same with drat and wt and mpg as outcome
 
+data_cars$drat_z <- (data_cars$drat - mean(data_cars$drat)) / sd(data_cars$drat)
+data_cars$wt_z <- (data_cars$wt - mean(data_cars$wt)) / sd(data_cars$wt)
+
+model_new <- lm(mpg ~ wt_z * drat_z, data = data_cars)
+summary(model_new)

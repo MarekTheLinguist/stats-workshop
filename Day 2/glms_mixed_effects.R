@@ -70,10 +70,57 @@ These slopes are drawn from a distribution centered around the fixed effect slop
 
 
 # now we can try working with a real-life example
+data_et <- read_csv("~/Documents/Research/stats-workshop/Day 2/data.csv")
+view(data_et)
+# transform "RECORDING_SESSION_LABEL", "Condition", "IA_LABEL", "Session_Name_", "source_target", "map_sentence"
+# create a new variable, called data_map, which filters data_et on the basis of the column source_target and selects only target
+# build a simple linear model which checks if mean fixation duration is affected by condition and trial index
+
+# now, let's build a model with random effects with a different subset of the data
+data_map <- filter(data_et, data$map_sentence == "map")
 
 
+mdl_simp_map <- lm(mean_fixation_duration ~ Condition, data = data_map)
+
+summary(mdl_simp_map)
+
+mdl_both_mfd_simp <- lm(mean_fixation_duration ~ Condition * source_target * Trial_Index_, data = data_map)
+summary(mdl_both_mfd_simp)
+
+# model with random effects for participant
+
+mdl_condition <- lmer(mean_fixation_duration ~ Condition + (1 |Session_Name_), data = data_map)
+mdl_condition_st <- lmer(mean_fixation_duration ~ Condition * source_target + (1 |Session_Name_), data = data_map)
+mdl_full_mfd <- lmer(mean_fixation_duration ~ Condition * source_target * Trial_Index_+ (1 |Session_Name_), data = data_map)
+summary(mdl_full_mfd)
+
+
+
+
+mdl_null <- lmer(mean_fixation_duration ~ 1 + (1 |Session_Name_), data = data_map)
 
 # do model comparisons
-# maximal model
+anova(mdl_null, mdl_condition, mdl_condition_st, mdl_full_mfd)
+
+
+# we do the same with random effects structure
+data <- read_csv("~/Documents/Research/stats-workshop/Day 1/data_4.csv")
+data <- data %>% mutate_at(c("meaning", "participant", "pair", "condition", "round"), as_factor)
+
+data_path <- filter(data, data$totalPath < 900)
+ggplot(data_path, aes(x = round, y = totalPath, fill = condition)) +
+  geom_boxplot()
+
+
+mdl_null <- lmer(totalPath ~ 1 + (1|participant), data = data_path)
+
+mdl_condition <- lmer(totalPath ~ condition + (1|participant), data = data_path)
+mdl_condition_round <- lmer(totalPath ~ condition * round + (1|participant), data = data_path)
+
+mdl_condition_round_pair <-  lmer(totalPath ~ condition * round + (1|participant) + (1|pair),  data = data_path)
+mdl_condition_round_pair_meaning <-  lmer(totalPath ~ condition * round + (1|participant) + (1|pair) + (1|meaning),  data = data_path)
+mdl_condition_round_pair_meaning_2 <-  lmer(totalPath ~ condition * round + (1|participant:pair) + (1|pair) + (1|meaning),  data = data_path)
+
+anova(mdl_null, mdl_condition_round, mdl_condition_round_pair, mdl_condition_round_pair_meaning, mdl_condition_round_pair_meaning_2)
 # rule of parsimony
 
