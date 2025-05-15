@@ -37,6 +37,7 @@ abline(c(0, 8))
 # here's a small piece of code that does it
 data <- cbind(hours_studied, test_score)
 data <- as.data.frame(data)
+data
 # were creating a polynomial orthogonal transformation of hours studied
 # degree = says which polynomial degree we want
 # we generated the data and know it's quadratic :)
@@ -48,6 +49,9 @@ data <- as.data.frame(data)
 # Two variables are perfectly collinear if there is an exact linear relationship between the two,
 # so the correlation between them is equal to 1 or −1. 
 poly_terms <- poly(data$hours_studied, degree = 2)
+poly_terms
+
+poly_terms[,1]
 
 data$time_1 <- poly_terms[, 1]  # First-degree polynomial
 data$time_2 <- poly_terms[, 2]  # Second-degree polynomial
@@ -56,6 +60,7 @@ data
 
 lin_model <-  lm(test_score ~ time_1, data = data)
 poly_model <- lm(test_score ~ time_1 + time_2, data = data)
+summary(lin_model)
 summary(poly_model)
 
 plot( data$hours_studied, data$test_score, pch = 19, col = "darkgray", main = "2nd Order Polynomial Fit",
@@ -67,9 +72,10 @@ anova(lin_model, poly_model) # look at RSS: the lower the better
 # the discrepancy between the model and the observed data
 
 # it's POLYnomial regression
+# y = a + bx
 # y = a + b_1 * x + b_2 * x**2
 # y = a + b_1 * x + b_2 * x ** 2 + b_3 * x ** 3
-# ...
+# # y = a + b_1 * x + b_2 * x ** 2 + b_3 * x ** 3 + b_4 * x ** 4
 # so how do I decide what order polynomial to use?
 # you have to visually inspect data
 # and look for "inflection points", i.e. moments where the curve changes and how many times
@@ -78,6 +84,7 @@ set.seed(123)
 
 # hours studied
 hours <- seq(0, 10, by = 0.1)
+hours
 
 # Simulate quadratic and cubic relationships with noise
 quad_score <- 50 + 3 * hours - 0.5 * hours^2 + rnorm(length(hours), 0, 3)
@@ -108,7 +115,7 @@ legend("bottomright", legend = c("True Cubic", "Linear Regression"),
 
 # Reset plotting layout
 par(mfrow = c(1, 1))
-
+dev.off()
 ## let's use some data from a coursebook
 # the coursebook is entitled "Growth Curve Analysis and Visualization with R"
 # by Daniel Mirman
@@ -118,16 +125,18 @@ all_files # contents of rdata
 # now you can load any datafile from all_files
 
 WordLearnEx
-
-
+head(WordLearnEx)
+view(WordLearnEx)
 
 # Subject: A unique identifier for each participant. 
 # TP: A categorical between-participants factor with two levels, low and high (within-participants manipulations will be covered in Chapter 4).
 # Block: A numeric variable indicating training block, ranging from 1 to 10.
 # Accuracy: Proportion correct for a given participant in a given training block, ranging from 0 to 1.
 
-ggplot(WordLearnEx, aes(Block, Accuracy, shape=TP)) +
-  stat_summary(fun = mean, geom="line", size=1) +
+WordLearnEx$TP <- as_factor(WordLearnEx$TP)
+
+ggplot(WordLearnEx, aes(x = Block, y = Accuracy, shape = TP)) +
+  stat_summary(fun = mean, geom="line", linewidth=1) +
   stat_summary(fun.data=mean_se, geom="pointrange", linewidth=1) +
   theme_bw(base_size=10) +
   coord_cartesian(ylim=c(0.5, 1.0)) +
@@ -143,7 +152,9 @@ ggplot(WordLearnEx, aes(Block, Accuracy, color = TP)) +
 
 # create a second-order polynomial
 polynomial <- poly(unique(WordLearnEx$Block), 2)
+polynomial
 WordLearnEx[,paste("ot", 1:2, sep="")] <- polynomial[WordLearnEx$Block, 1:2]
+WordLearnEx
 
 linear_model <- lm(Accuracy ~ Block * TP, data = WordLearnEx)
 summary(linear_model)  
@@ -199,9 +210,12 @@ anova(linear_model, quadratic_model)
 all_files
 
 ## use this data
-CP
+view(CP)
 
-
+ggplot(CP, aes(x = Stimulus, y = d.prime, color = Type)) +
+  stat_summary(fun = mean, geom="line", linewidth=1) +
+  stat_summary(fun.data=mean_se, geom="pointrange", linewidth=1) +
+  theme_bw(base_size=10)
 # The CP data frame contains auditory discrimination data (d', called “d prime”)
 # for two continua of eight stimuli. The continua were created by morphing between 
 # two sounds from different categories, either along a temporal acoustic
@@ -214,3 +228,32 @@ CP
 # create an n-order polynomial and add it to your data
 # model it
 # visualise the data and fit a curve to the model
+# compare a linear model with a quadratic model
+
+
+plot(CP$Stimulus, CP$d.prime, xlab = "Block", ylab = "d.prime", pch = 16, col = CP$Type)
+
+CP$Type <- as_factor(CP$Type)
+
+ggplot(CP, aes(x = Stimulus, y = d.prime, color=Type)) +
+  stat_summary(fun = mean, geom="line", size=1) +
+  stat_summary(fun.data=mean_se, geom="pointrange", linewidth=1)
+
+
+
+polynomial <- poly(unique(CP$Stimulus), 2) 
+CP[,paste("ot", 1:2, sep="")] <- polynomial[CP$Stimulus, 1:2]
+
+mdl_lin <- lm(d.prime ~ Stimulus * Type, data = CP)
+summary(mdl_lin)
+
+mdl_quad <- lm(d.prime ~ (ot1+ot2) * Type, data = CP)
+summary(mdl_quad)
+
+# negative trend for the temporal discrimination: people are better "in the middle"
+# spectral dimension - better at the endpoints?
+
+ggplot(CP, aes(Stimulus, d.prime, shape=Type)) +
+  stat_summary(aes(y=fitted(mdl_quad), linetype=Type), fun.y=mean,
+               geom="line", size=1) +
+  stat_summary(fun.data=mean_se,geom="pointrange",size=1)
